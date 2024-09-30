@@ -8,6 +8,15 @@ class Hashmap {
     this.size = size;
   }
 
+  loadFactor(loadNumber) {
+    this.size = size;
+    loadLimit = loadNumber * this.size;
+
+    if (loadLimit > this.size) {
+      return true;
+    }
+  }
+
   hash(key) {
     let hashCode = 0;
 
