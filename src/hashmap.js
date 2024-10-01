@@ -1,11 +1,8 @@
-if (index < 0 || index >= buckets.length) {
-  throw new Error("Trying to access index out of bound");
-}
-
 class Hashmap {
-  constructor(size) {
+  constructor(size, loadFactor) {
     this.hashTable = new Array(size);
     this.size = size;
+    this.loadFactor = 0.75;
   }
 
   loadFactor(loadNumber) {
@@ -15,6 +12,13 @@ class Hashmap {
     if (loadLimit > this.size) {
       return true;
     }
+  }
+
+  resize(newSize) {
+    const oldHashTable = this.hashTable;
+    const newHashTable = oldHashTable * 2;
+
+    this.hashTable = newHashTable;
   }
 
   hash(key) {
@@ -30,16 +34,26 @@ class Hashmap {
   }
 
   set(key, value) {
-    const index = this.hash(key);
+    const index = this.hash(key) % this.size;
     const bucket = this.hashTable[index];
 
+    if (!this.hashTable[index]) {
+      this.hashTable[index] = [];
+    }
+
     if (bucket) {
-      let existingKey = bucket.get((node) => node.key === key);
+      let existingKey = this.hashTable[index].find(
+        (entry) => entry.key === key
+      );
       if (existingKey) {
         existingKey.value = value;
       } else {
-        bucket.push({ key, value });
+        this.hashTable[index].push({ key, value });
       }
+    }
+
+    if (this.length() / this.size > this.loadFactor) {
+      this.resize();
     }
   }
 
@@ -99,7 +113,10 @@ class Hashmap {
         count++;
       }
     }
-    return count;
+    return this.hashTable.reduce(
+      (count, bucket) => count + (bucket ? bucket.length : 0),
+      0
+    );
   }
 
   clear() {
@@ -111,7 +128,7 @@ class Hashmap {
 
   keys() {
     let keysArray = [];
-    const index = this.hash(key);
+    const index = this.hash(key) % this.size;
     const bucket = this.hashTable[index];
 
     for (let i = 0; i < bucket.length; i++) {
@@ -124,7 +141,7 @@ class Hashmap {
 
   values() {
     let valuesArray = [];
-    const index = this.hash(key);
+    const index = this.hash(key) % this.size;
     const bucket = this.hashTable[index];
 
     for (let i = 0; i < bucket.length; i++) {
@@ -137,7 +154,7 @@ class Hashmap {
 
   entries() {
     let entriesArray = [];
-    const index = this.hash(key);
+    const index = this.hash(key) % this.size;
     const bucket = this.hashTable[index];
 
     for (let i = 0; i < bucket.length; i++) {
@@ -148,3 +165,5 @@ class Hashmap {
     return entriesArray;
   }
 }
+
+export { Hashmap };
