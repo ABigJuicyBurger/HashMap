@@ -1,8 +1,8 @@
 class Hashmap {
-  constructor(size, loadFactor) {
+  constructor(size = 16, loadFactor = 0.75) {
     this.hashTable = new Array(size);
     this.size = size;
-    this.loadFactor = 0.75;
+    this.loadFactor = loadFactor;
   }
 
   loadFactor(loadNumber) {
@@ -16,9 +16,16 @@ class Hashmap {
 
   resize(newSize) {
     const oldHashTable = this.hashTable;
-    const newHashTable = oldHashTable * 2;
+    this.hashTable = new Array(newSize);
+    this.size = newSize;
 
-    this.hashTable = newHashTable;
+    for (let bucket of oldHashTable) {
+      if (bucket) {
+        for (let entry of bucket) {
+          this.set(entry.key, entry.value);
+        }
+      }
+    }
   }
 
   hash(key) {
@@ -35,42 +42,30 @@ class Hashmap {
 
   set(key, value) {
     const index = this.hash(key) % this.size;
-    const bucket = this.hashTable[index];
-
     if (!this.hashTable[index]) {
       this.hashTable[index] = [];
     }
+    const bucket = this.hashTable[index];
 
-    if (bucket) {
-      let existingKey = this.hashTable[index].find(
-        (entry) => entry.key === key
-      );
-      if (existingKey) {
-        existingKey.value = value;
-      } else {
-        this.hashTable[index].push({ key, value });
-      }
+    let existingEntry = bucket.find((entry) => entry.key === key);
+    if (existingEntry) {
+      existingEntry.value = value;
+    } else {
+      bucket.push({ key, value });
     }
 
     if (this.length() / this.size > this.loadFactor) {
-      this.resize();
+      this.resize(this.size * 2);
     }
   }
 
   get(key) {
     const index = this.hash(key) % this.size;
     const bucket = this.hashTable[index];
-
-    if (!bucket) {
-      return null;
+    if (bucket) {
+      const entry = bucket.find((entry) => entry.key === key);
+      return entry ? entry.value : null;
     }
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (bucket[i].key === key) {
-        return bucket[i].value;
-      }
-    }
-
     return null;
   }
 
@@ -106,13 +101,6 @@ class Hashmap {
   }
 
   length() {
-    let count = 0;
-
-    for (let i = 0; i < this.hashTable.length; i++) {
-      if (this.hashTable[i]) {
-        count++;
-      }
-    }
     return this.hashTable.reduce(
       (count, bucket) => count + (bucket ? bucket.length : 0),
       0
@@ -127,42 +115,38 @@ class Hashmap {
   }
 
   keys() {
-    let keysArray = [];
-    const index = this.hash(key) % this.size;
-    const bucket = this.hashTable[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.bucket[i]) {
-        keysArray.push(this.bucket[i].key);
-      }
-    }
-    return keysArray;
+    return this.hashTable.flatMap((bucket) =>
+      bucket ? bucket.map((entry) => entry.key) : []
+    );
   }
 
   values() {
-    let valuesArray = [];
-    const index = this.hash(key) % this.size;
-    const bucket = this.hashTable[index];
-
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.bucket[i]) {
-        valuesArray.push(this.bucket[i].value);
-      }
-    }
-    return valuesArray;
+    return this.hashTable.flatMap((bucket) =>
+      bucket ? bucket.map((entry) => entry.value) : []
+    );
   }
 
   entries() {
-    let entriesArray = [];
-    const index = this.hash(key) % this.size;
-    const bucket = this.hashTable[index];
+    return this.hashTable.flatMap((bucket) =>
+      bucket ? bucket.map((entry) => [entry.key, entry.value]) : []
+    );
+  }
 
-    for (let i = 0; i < bucket.length; i++) {
-      if (this.bucket[i]) {
-        entriesArray.push(this.bucket[i].key + this.bucket[i].value);
-      }
-    }
-    return entriesArray;
+  getCapacity() {
+    return this.length() / this.size;
+  }
+
+  getDistribution() {
+    const occupiedBuckets = this.hashTable.filter(
+      (bucket) => bucket && bucket.length > 0
+    ).length;
+    return `${occupiedBuckets} / ${this.size} buckets occupied`;
+  }
+
+  logStatus() {
+    console.log(`Capacity: ${this.getCapacity()}`);
+    console.log(`Distribution: ${this.getDistribution()}`);
+    console.log("Hash Table:", this.hashTable);
   }
 }
 
